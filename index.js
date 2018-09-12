@@ -1,99 +1,140 @@
-var title = $('#title-input').val();
-var body = $('#body-input').val();
-var numCards = 0;
-var qualityVariable = "swill";
 
-var newCard = function(id , title , body , quality) {
-    return '<div id="' + id + '"class="card-container"><h2 class="title-of-card">'  
-            + title +  '</h2>'
-            + '<button class="delete-button"></button>'
-            +'<p class="body-of-card">'
-            + body + '</p>'
-            + '<button class="upvote"></button>' 
-            + '<button class="downvote"></button>' 
-            + '<p class="quality">' + 'quality:' + '<span class="qualityVariable">' + quality + '</span>' + '</p>'
-            + '<hr>' 
-            + '</div>';
+$(document).ready(getFromLocalStorage);
+
+
+function createCardHtml(timestamp, title , body , quality) {
+var cardHTML =
+    `<div class="card-container" id="${timestamp}">
+        <h2 class="title-of-card"> ${title}</h2>
+        <button class="delete-button"></button>
+        <p class="body-of-card">${body}</p>
+        <button class="upvote"></button>
+        <button class="downvote"></button>
+        <p class="quality"> quality: <span class="qualityVariable"> ${quality}</span></p>
+        <hr>
+    </div>`
+return cardHTML
 };
 
-function cardObject() {
-    return {
-        title: $('#title-input').val(),
-        body: $('#body-input').val(),
-        quality: qualityVariable
-    };
-}
 
-$.each(localStorage, function(key) {
-    var cardData = JSON.parse(this);
-    numCards++;
-    $( ".bottom-box" ).prepend(newCard(key, cardData.title, cardData.body, cardData.quality));
-});
+function addCardToPage(cardHTML){
+    var bottomBox = $('.bottom-box');
+ 
+    $('.bottom-box').prepend(cardHTML);
 
-var localStoreCard = function() {
-    var cardString = JSON.stringify(cardObject());
-    localStorage.setItem('card' + numCards  , cardString);
-}
+  } 
+    $('.bottom-box').on('click', function(event){
+
+    if (event.target.className === 'delete-button'){
+
+      deleteCard(event);
+  }   else if (event.target.className==='upvote'||event.target.className==='downvote'){
+      changeQuality(event);
+
+  }
+})
+
+
+
 
 $('.save-btn').on('click', function(event) {
     event.preventDefault();
-    if ($('#title-input').val() === "" || $('#body-input').val() === "") {
-       return false;
-    };  
+    var title = $('.title-input').val();
+    var body = $('.body-input').val();
+    var qualityVariable = "swill";
+    var id = Date.now();
+    var cardHTML = createCardHtml(id, title, body, qualityVariable);
+    addCardToPage(cardHTML);
+    addToLocalStorage(id, cardHTML);
+    clearInputs();
 
-    numCards++;
-    $( ".bottom-box" ).prepend(newCard('card' + numCards, $('#title-input').val(), $('#body-input').val(), qualityVariable)); 
-    localStoreCard();
-    $('form')[0].reset();
 });
-
-$(".bottom-box").on('click', function(event){
-    var currentQuality = $($(event.target).siblings('p.quality').children()[0]).text().trim();
-    var qualityVariable;
-
-    if (event.target.className === "upvote" || event.target.className === "downvote"){
-
-        if (event.target.className === "upvote" && currentQuality === "plausible"){
-            qualityVariable = "genius";
-            $($(event.target).siblings('p.quality').children()[0]).text(qualityVariable);
-               
-        } else if (event.target.className === "upvote" && currentQuality === "swill") {
-            qualityVariable = "plausible";
-            $($(event.target).siblings('p.quality').children()[0]).text(qualityVariable);
-               
-        } else if (event.target.className === "downvote" && currentQuality === "plausible") {
-            qualityVariable = "swill"
-            $($(event.target).siblings('p.quality').children()[0]).text(qualityVariable);
-
-        } else if (event.target.className === "downvote" && currentQuality === "genius") {
-            qualityVariable = "plausible"
-            $($(event.target).siblings('p.quality').children()[0]).text(qualityVariable);
-
-        } else if (event.target.className === "downvote" && currentQuality === "swill") {
-            qualityVariable = "swill";
-        
-        } else if (event.target.className === "upvote" && currentQuality === "genius") {
-            qualityVariable = "genius";
-        }
-
-    var cardHTML = $(event.target).closest('.card-container');
-    var cardHTMLId = cardHTML[0].id;
-    var cardObjectInJSON = localStorage.getItem(cardHTMLId);
-    var cardObjectInJS = JSON.parse(cardObjectInJSON);
-
-    cardObjectInJS.quality = qualityVariable;
-
-    var newCardJSON = JSON.stringify(cardObjectInJS);
-    localStorage.setItem(cardHTMLId, newCardJSON);
-    }
    
-    else if (event.target.className === "delete-button") {
-        var cardHTML = $(event.target).closest('.card-container').remove();
-        var cardHTMLId = cardHTML[0].id;
-        localStorage.removeItem(cardHTMLId);
-    }
-});
-      
+
+
+function clearInputs(){
+  $('.title-input').val("");
+  $('.body-input').val("");
+}
+
+
+function addToLocalStorage(id, cardHTML) {
+  localStorage.setItem(id, cardHTML);
+}
+
+
+function getFromLocalStorage() {
+  for (var i = 0; i < localStorage.length; i++) {
+    var timeStamp = localStorage.key(i);
+    var cardHTML = localStorage.getItem(timeStamp);
+    addCardToPage(cardHTML);
+  }
+}
+
+
+
+function changeQuality(event){
+ var currentQuality = $($(event.target).siblings('p.quality').children()[0]).text().trim();
+
+  if (event.target.className==='upvote'){
+    upVote(event, currentQuality);
+  } else {
+    downVote(event, currentQuality)
+  }
+}
+
+
+function upVote(event, currentQuality){
+ if (currentQuality==='swill'){
+    $($(event.target).siblings('p.quality').children()[0]).text('plausible');
+    changeQualityLocalStorage(event, 'plausible');
+  }else if (currentQuality==='plausible'){
+    $($(event.target).siblings('p.quality').children()[0]).text('genius');
+    changeQualityLocalStorage(event, 'genius');
+  }
+
+}
+
+function downVote(event, currentQuality){
+ if (currentQuality==='genius'){
+    $($(event.target).siblings('p.quality').children()[0]).text('plausible');
+    changeQualityLocalStorage(event, 'plausible');
+  }else if (currentQuality==='plausible'){
+    $($(event.target).siblings('p.quality').children()[0]).text('swill');
+    changeQualityLocalStorage(event, 'swill');
+  }
+
+}
+
+
+
+
+
+function changeQualityLocalStorage(event, qualityVariable) {
+  var cardHTML = $(event.target).closest('.card-container');
+  var cardHTMLId = cardHTML[0].id;
+  console.log('cardHTML outerHTML', cardHTML[0].outerHTML);
+  var cardObjectInJSON = localStorage.setItem(cardHTMLId, cardHTML[0].outerHTML);
+ 
+}
+
+
+function deleteCard(event){
+    var cardHTML = $(event.target).closest('.card-container').remove();
+    var cardHTMLId = cardHTML[0].id;
+    localStorage.removeItem(cardHTMLId);
+
+}
+
+
+// function freezeButtons(){
+
+//     if ($('#title-input').val() === "" || $('#body-input').val() === "") {
+       
+   
+
+
+// }
 
 
 
